@@ -151,9 +151,12 @@ Deno.test("IrregularExpression - Execute Method", () => {
 
   const input = "123 abc 456 def 789";
   const matches = regex.execute(input);
-  assertEquals(matches.length, 2);
-  assertEquals(matches[0][0], "123");
-  assertEquals(matches[1][0], "456");
+
+  console.log("Matches:", matches); // Add this for debugging
+
+  assertEquals(matches.length, 2, "Should find 2 matches");
+  assertEquals(matches[0][0], "123", "First match should be '123'");
+  assertEquals(matches[1][0], "456", "Second match should be '456'");
 });
 
 Deno.test("IrregularExpression - Get Pattern", () => {
@@ -279,4 +282,30 @@ Deno.test("README Example 5: Replace Words in a Sentence", () => {
   const input = "The cat sat on the mat.";
   const result = input.replace(regex, "dog");
   assertEquals(result, "The dog sat on the mat.");
+});
+
+Deno.test("then method works correctly", () => {
+  const regex = IrregularExpression.match()
+    .startOfLine()
+    .digit().exactly(3)
+    .then('-')
+    .digit().exactly(3)
+    .then('-')
+    .digit().exactly(4)
+    .endOfLine();
+
+  const pattern = regex.getPattern();
+  assertEquals(pattern, "^\\d{3}-\\d{3}-\\d{4}$", "Pattern should match expected phone number format");
+
+  const builtRegex = regex.build();
+  assertEquals(builtRegex.toString(), "/^\\d{3}-\\d{3}-\\d{4}$/g", "Built regex should match expected pattern");
+
+  assertEquals(builtRegex.test("123-456-7890"), true);
+  assertEquals(builtRegex.test("12-34-5678"), false);
+  assertEquals(builtRegex.test("123-456-78901"), false);
+  assertEquals(builtRegex.test("123-456-789"), false);
+
+  const jsRegex = new RegExp(builtRegex.toString().slice(1, -2)); // Remove leading / and trailing /g
+  assertEquals(jsRegex.test("123-456-7890"), true);
+  assertEquals(jsRegex.test("12-34-5678"), false);
 });

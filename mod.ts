@@ -144,33 +144,6 @@ export class IrregularExpression extends EventTarget {
     }
 
     /**
-     * Sets the maximum number of matches to collect.
-     * 
-     * @param count The maximum number of matches to collect.
-     * @returns The current instance for chaining.
-     * 
-     * @example
-     * ```typescript
-     * const regex = IrregularExpression.match()
-     *   .digit()
-     *   .oneOrMore()
-     *   .runTimes(3)
-     *   .build();
-     * 
-     * const text = "1 2 3 4 5";
-     * console.log(text.match(regex)?.length); // 3
-     * ```
-     */
-    runTimes(count: number): this {
-        if (count <= 0 || !Number.isInteger(count)) {
-            this.emitError('runTimes expects a positive integer.');
-            return this;
-        }
-        this.maxRun = count;
-        return this;
-    }
-
-    /**
      * Matches the start of a line.
      * 
      * @returns The current instance for chaining.
@@ -514,7 +487,7 @@ export class IrregularExpression extends EventTarget {
      * console.log(regex.test("a")); // true
      * console.log(regex.test("!")); // true
      * console.log(regex.test("5")); // false
-     * ```
+     * 
      */
     notInRange(start: string, end: string): this {
         this.pattern += `[^${start}-${end}]`;
@@ -612,6 +585,7 @@ export class IrregularExpression extends EventTarget {
         this.pattern += `{${n}}`;
         return this;
     }
+
 
     /**
      * Matches the given pattern at least n times.
@@ -960,8 +934,8 @@ export class IrregularExpression extends EventTarget {
             return new RegExp(this.pattern, Array.from(this.flags).join(''));
         } catch (error) {
             this.emitError(`Invalid regex pattern: ${error.message}`);
-            // Return a regex that matches nothing to prevent further errors
-            return new RegExp('(?!x)x');
+            // Return a regex that matches nothing
+            return /(?!)/;
         }
     }
 
@@ -1011,19 +985,13 @@ export class IrregularExpression extends EventTarget {
      * ```
      */
     execute(input: string): RegExpExecArray[] {
-        const regex = this.build();
+        const regex = new RegExp(this.pattern, Array.from(this.flags).join(''));
         const matches: RegExpExecArray[] = [];
         let match: RegExpExecArray | null;
-        let count = 0;
-
-        while ((match = regex.exec(input)) !== null) {
+        while ((match = regex.exec(input)) !== null && (this.maxRun === null || matches.length < this.maxRun)) {
             matches.push(match);
-            count += 1;
-            if (this.maxRun !== null && count >= this.maxRun) {
-                break;
-            }
+            if (!this.flags.has('g')) break;
         }
-
         return matches;
     }
 
@@ -1181,5 +1149,54 @@ export class IrregularExpression extends EventTarget {
      */
     private escapeRegExp(text: string): string {
         return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    /**
+     * Adds a literal string to the pattern.
+     * This is an alias for the `literal` method.
+     * 
+     * @param text The literal text to match.
+     * @returns The current instance for chaining.
+     * 
+     * @example
+     * ```typescript
+     * const regex = IrregularExpression.match()
+     *   .digit()
+     *   .then('-')
+     *   .digit()
+     *   .build();
+     * 
+     * console.log(regex.test("1-2")); // true
+     * console.log(regex.test("12")); // false
+     * ```
+     */
+    then(value: string): this {
+        return this.literal(value);
+    }
+
+    /**
+     * Sets the maximum number of times the pattern should match.
+     * 
+     * @param times The maximum number of matches.
+     * @returns The current instance for chaining.
+     * 
+     * @example
+     * ```typescript
+     * const regex = IrregularExpression.match()
+     *   .digit()
+     *   .runTimes(2)
+     *   .build();
+     * 
+     * console.log(regex.test("12")); // true
+     * console.log(regex.test("123")); // false
+     * ```
+     */
+    runTimes(times: number): this {
+        if (times < 0) {
+            this.emitError("runTimes expects a positive integer.");
+            return this;
+        }
+        this.maxRun = times;
+        return this;
     }
 }
