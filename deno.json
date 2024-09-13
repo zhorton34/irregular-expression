@@ -1,0 +1,23 @@
+{
+  "name": "@findhow/irregular-expression",
+  "version": "0.0.1",
+  "description": "Just your everyday irregular expression fluently implemented.",
+  "tasks": {
+    "test": "deno test --allow-all ./mod.test.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "imports": { 
+    "@std/assert": "jsr:@std/assert" 
+  },
+  "fmt": {
+    "include": ["*.ts"],
+    "exclude": ["**/node_modules/**"]
+  },
+  "lint": {
+    "include": ["*.ts"],
+    "exclude": ["**/node_modules/**"]
+  }
+}
+  
